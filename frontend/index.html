@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>充电桩运维结算系统</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="logo">⚡ 充电桩运维结算系统</div>
+      <nav class="nav">
+        <button class="nav-btn active" data-page="work-order">工单管理</button>
+        <button class="nav-btn" data-page="repair-confirm">修复确认</button>
+        <button class="nav-btn" data-page="settlement">结算管理</button>
+        <button class="nav-btn" data-page="rules">扣款规则</button>
+      </nav>
+      <div class="user-info">
+        <span>当前用户：</span>
+        <select id="currentUser">
+          <option value="运维员_张工">运维员_张工</option>
+          <option value="站长_李经理">站长_李经理</option>
+          <option value="财务_王会计">财务_王会计</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="main">
+      <section id="page-work-order" class="page active">
+        <div class="page-header">
+          <h2>故障工单管理</h2>
+          <button class="btn btn-primary" onclick="openWorkOrderModal()">+ 新建工单</button>
+        </div>
+        
+        <div class="filter-bar">
+          <input type="text" id="wo-pile-filter" placeholder="搜索桩号..." oninput="loadWorkOrders()">
+          <select id="wo-status-filter" onchange="loadWorkOrders()">
+            <option value="">全部状态</option>
+            <option value="pending">待修复</option>
+            <option value="repaired">已修复</option>
+            <option value="settled">已结算</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>桩号</th>
+                <th>故障类型</th>
+                <th>停机开始时间</th>
+                <th>修复时间</th>
+                <th>停机时长(h)</th>
+                <th>责任方</th>
+                <th>状态</th>
+                <th>上报人</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="work-order-tbody">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button onclick="changePage('wo', -1)">上一页</button>
+          <span id="wo-page-info">第 1 页</span>
+          <button onclick="changePage('wo', 1)">下一页</button>
+        </div>
+      </section>
+
+      <section id="page-repair-confirm" class="page">
+        <div class="page-header">
+          <h2>修复确认</h2>
+        </div>
+        
+        <div class="filter-bar">
+          <input type="text" id="rc-pile-filter" placeholder="搜索桩号..." oninput="loadRepairList()">
+          <span class="tip">💡 仅显示待修复状态的工单</span>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>桩号</th>
+                <th>故障类型</th>
+                <th>故障描述</th>
+                <th>停机开始时间</th>
+                <th>上报人</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="repair-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-settlement" class="page">
+        <div class="page-header">
+          <h2>结算管理</h2>
+          <div>
+            <input type="month" id="settle-period" value="2024-06">
+            <button class="btn btn-primary" onclick="generateSettlement()">生成结算单</button>
+          </div>
+        </div>
+        
+        <div class="filter-bar">
+          <select id="settle-status-filter" onchange="loadSettlements()">
+            <option value="">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="confirmed">已确认</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>结算周期</th>
+                <th>桩号</th>
+                <th>工单数量</th>
+                <th>总停机时长(h)</th>
+                <th>总扣款(元)</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="settlement-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-rules" class="page">
+        <div class="page-header">
+          <h2>扣款规则配置</h2>
+          <button class="btn btn-primary" onclick="openRuleModal()">+ 新增规则</button>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>故障类型</th>
+                <th>规则名称</th>
+                <th>小时费率(元)</th>
+                <th>最低扣款(元)</th>
+                <th>最高扣款(元)</th>
+                <th>重复故障加罚</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="rules-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="modal" class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 id="modal-title">标题</h3>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+        </div>
+        <div class="modal-footer" id="modal-footer">
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

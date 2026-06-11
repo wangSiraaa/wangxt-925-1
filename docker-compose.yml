@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3002:3001"
+    volumes:
+      - ./data:/app/backend/data
+      - ./uploads:/app/uploads
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: charging-pile-ops-settlement
