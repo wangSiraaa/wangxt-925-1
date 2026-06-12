@@ -14,7 +14,10 @@ let data = {
   settlement: [],
   settlement_item: [],
   operation_log: [],
-  deduction_rule: []
+  deduction_rule: [],
+  recurrence_chain: [],
+  settlement_adjustment: [],
+  adjustment_item: []
 };
 
 function loadData() {
@@ -37,10 +40,10 @@ function saveData() {
 
 function initDefaultData() {
   data.deduction_rule = [
-    { id: 'rule001', fault_type: '硬件故障', rule_name: '硬件故障扣款标准', rate_per_hour: 50, min_amount: 100, max_amount: 2000, repeat_penalty: 1.5, is_active: 1, created_at: new Date().toISOString() },
-    { id: 'rule002', fault_type: '软件故障', rule_name: '软件故障扣款标准', rate_per_hour: 30, min_amount: 50, max_amount: 1000, repeat_penalty: 1.2, is_active: 1, created_at: new Date().toISOString() },
-    { id: 'rule003', fault_type: '网络故障', rule_name: '网络故障扣款标准', rate_per_hour: 40, min_amount: 80, max_amount: 1500, repeat_penalty: 1.3, is_active: 1, created_at: new Date().toISOString() },
-    { id: 'rule004', fault_type: '其他', rule_name: '其他故障扣款标准', rate_per_hour: 20, min_amount: 30, max_amount: 500, repeat_penalty: 1.0, is_active: 1, created_at: new Date().toISOString() },
+    { id: 'rule001', fault_type: '硬件故障', rule_name: '硬件故障扣款标准', rate_per_hour: 50, min_amount: 100, max_amount: 2000, repeat_penalty: 1.5, warranty_months: 6, warranty_discount: 0.5, is_active: 1, created_at: new Date().toISOString() },
+    { id: 'rule002', fault_type: '软件故障', rule_name: '软件故障扣款标准', rate_per_hour: 30, min_amount: 50, max_amount: 1000, repeat_penalty: 1.2, warranty_months: 3, warranty_discount: 0.3, is_active: 1, created_at: new Date().toISOString() },
+    { id: 'rule003', fault_type: '网络故障', rule_name: '网络故障扣款标准', rate_per_hour: 40, min_amount: 80, max_amount: 1500, repeat_penalty: 1.3, warranty_months: 3, warranty_discount: 0.4, is_active: 1, created_at: new Date().toISOString() },
+    { id: 'rule004', fault_type: '其他', rule_name: '其他故障扣款标准', rate_per_hour: 20, min_amount: 30, max_amount: 500, repeat_penalty: 1.0, warranty_months: 1, warranty_discount: 0.2, is_active: 1, created_at: new Date().toISOString() },
   ];
   saveData();
 }
@@ -123,6 +126,9 @@ const tables = {
   settlement_item: new Table('settlement_item'),
   operation_log: new Table('operation_log'),
   deduction_rule: new Table('deduction_rule'),
+  recurrence_chain: new Table('recurrence_chain'),
+  settlement_adjustment: new Table('settlement_adjustment'),
+  adjustment_item: new Table('adjustment_item'),
 };
 
 function transaction(fn) {
@@ -144,7 +150,7 @@ module.exports = {
   now,
   _raw: data,
   _reset: () => {
-    data = { work_order: [], repair_record: [], settlement: [], settlement_item: [], operation_log: [], deduction_rule: [] };
+    data = { work_order: [], repair_record: [], settlement: [], settlement_item: [], operation_log: [], deduction_rule: [], recurrence_chain: [], settlement_adjustment: [], adjustment_item: [] };
     initDefaultData();
   }
 };

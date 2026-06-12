@@ -576,3 +576,127 @@ body {
   gap: 4px;
   flex-wrap: wrap;
 }
+
+.recurrence-alert {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.recurrence-alert h4 {
+  font-size: 15px;
+  color: #fa8c16;
+  margin-bottom: 12px;
+}
+
+.recurrence-item {
+  background: white;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.recurrence-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.recurrence-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.recurrence-tag.warranty-yes {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.recurrence-tag.warranty-no {
+  background: #f0f0f0;
+  color: #8c8c8c;
+}
+
+.recurrence-detail-row {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #595959;
+  padding: 4px 0;
+}
+
+.chain-timeline {
+  padding-left: 24px;
+  position: relative;
+}
+
+.chain-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #d9d9d9;
+}
+
+.chain-node {
+  position: relative;
+  padding-bottom: 16px;
+  padding-left: 20px;
+}
+
+.chain-node-last {
+  padding-bottom: 0;
+}
+
+.chain-node-dot {
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.chain-node-dot.dot-settled {
+  background: #f6ffed;
+  border-color: #52c41a;
+}
+
+.chain-node-dot.dot-repaired {
+  background: #e6f7ff;
+  border-color: #1890ff;
+}
+
+.chain-node-content {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.chain-node-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chain-node-info {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #8c8c8c;
+}

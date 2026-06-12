@@ -17,7 +17,7 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, operator } = req.body;
+  const { fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, warranty_months, warranty_discount, operator } = req.body;
 
   if (!fault_type || !rule_name || rate_per_hour === undefined) {
     return res.json({ code: 1, message: '缺少必填字段' });
@@ -32,6 +32,8 @@ router.post('/', (req, res) => {
     min_amount: Number(min_amount) || 0,
     max_amount: max_amount ? Number(max_amount) : null,
     repeat_penalty: Number(repeat_penalty) || 1.0,
+    warranty_months: Number(warranty_months) || 0,
+    warranty_discount: Number(warranty_discount) || 0,
     is_active: 1,
     created_at: now()
   });
@@ -43,7 +45,7 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const { id } = req.params;
-  const { rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, is_active, operator } = req.body;
+  const { rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, warranty_months, warranty_discount, is_active, operator } = req.body;
 
   const rule = tables.deduction_rule.get(id);
   if (!rule) {
@@ -56,6 +58,8 @@ router.put('/:id', (req, res) => {
   if (min_amount !== undefined) updates.min_amount = Number(min_amount);
   if (max_amount !== undefined) updates.max_amount = max_amount ? Number(max_amount) : null;
   if (repeat_penalty !== undefined) updates.repeat_penalty = Number(repeat_penalty);
+  if (warranty_months !== undefined) updates.warranty_months = Number(warranty_months);
+  if (warranty_discount !== undefined) updates.warranty_discount = Number(warranty_discount);
   if (is_active !== undefined) updates.is_active = is_active ? 1 : 0;
 
   tables.deduction_rule.update(id, updates);

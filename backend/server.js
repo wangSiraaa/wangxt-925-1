@@ -7,6 +7,7 @@ const workOrderRoutes = require('./routes/workOrder');
 const settlementRoutes = require('./routes/settlement');
 const deductionRuleRoutes = require('./routes/deductionRule');
 const operationLogRoutes = require('./routes/operationLog');
+const recurrenceRoutes = require('./routes/recurrence');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -32,6 +33,7 @@ app.use('/api/work-orders', workOrderRoutes);
 app.use('/api/settlements', settlementRoutes);
 app.use('/api/deduction-rules', deductionRuleRoutes);
 app.use('/api/operation-logs', operationLogRoutes);
+app.use('/api/recurrences', recurrenceRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));

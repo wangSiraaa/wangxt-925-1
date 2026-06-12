@@ -98,8 +98,73 @@ function initDatabase() {
       min_amount REAL NOT NULL DEFAULT 0,
       max_amount REAL,
       repeat_penalty REAL NOT NULL DEFAULT 1.0,
+      warranty_months INTEGER NOT NULL DEFAULT 0,
+      warranty_discount REAL NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    -- 复发链路表
+    CREATE TABLE IF NOT EXISTS recurrence_chain (
+      id TEXT PRIMARY KEY,
+      original_work_order_id TEXT NOT NULL,
+      recurrence_work_order_id TEXT NOT NULL,
+      pile_no TEXT NOT NULL,
+      fault_type TEXT NOT NULL,
+      is_warranty INTEGER NOT NULL DEFAULT 0,
+      warranty_months INTEGER NOT NULL DEFAULT 0,
+      original_downtime REAL NOT NULL DEFAULT 0,
+      recurrence_downtime REAL NOT NULL DEFAULT 0,
+      total_downtime REAL NOT NULL DEFAULT 0,
+      original_duty_owner TEXT,
+      recurrence_duty_owner TEXT,
+      same_duty INTEGER NOT NULL DEFAULT 0,
+      warranty_end TEXT,
+      status TEXT NOT NULL DEFAULT 'detected',
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (original_work_order_id) REFERENCES work_order(id),
+      FOREIGN KEY (recurrence_work_order_id) REFERENCES work_order(id)
+    );
+
+    -- 结算调整单表
+    CREATE TABLE IF NOT EXISTS settlement_adjustment (
+      id TEXT PRIMARY KEY,
+      original_settlement_id TEXT NOT NULL,
+      recurrence_chain_id TEXT,
+      adjustment_type TEXT NOT NULL DEFAULT 'warranty_recurrence',
+      original_total_deduction REAL NOT NULL DEFAULT 0,
+      adjustment_amount REAL NOT NULL DEFAULT 0,
+      new_total_deduction REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'draft',
+      operator TEXT,
+      confirmed_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (original_settlement_id) REFERENCES settlement(id),
+      FOREIGN KEY (recurrence_chain_id) REFERENCES recurrence_chain(id)
+    );
+
+    -- 调整单明细表
+    CREATE TABLE IF NOT EXISTS adjustment_item (
+      id TEXT PRIMARY KEY,
+      adjustment_id TEXT NOT NULL,
+      original_item_id TEXT,
+      work_order_id TEXT NOT NULL,
+      fault_type TEXT NOT NULL,
+      original_downtime REAL NOT NULL DEFAULT 0,
+      recurrence_downtime REAL NOT NULL DEFAULT 0,
+      total_downtime REAL NOT NULL DEFAULT 0,
+      duty_owner TEXT,
+      duty_type TEXT,
+      original_deduction_amount REAL NOT NULL DEFAULT 0,
+      new_deduction_amount REAL NOT NULL DEFAULT 0,
+      adjustment_amount REAL NOT NULL DEFAULT 0,
+      same_duty INTEGER NOT NULL DEFAULT 0,
+      warranty_discount REAL NOT NULL DEFAULT 0,
+      remark TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (adjustment_id) REFERENCES settlement_adjustment(id) ON DELETE CASCADE,
+      FOREIGN KEY (original_item_id) REFERENCES settlement_item(id),
+      FOREIGN KEY (work_order_id) REFERENCES work_order(id)
     );
 
     -- 索引
@@ -109,6 +174,11 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_settlement_pile_no ON settlement(pile_no);
     CREATE INDEX IF NOT EXISTS idx_settlement_item_settlement ON settlement_item(settlement_id);
     CREATE INDEX IF NOT EXISTS idx_operation_log_biz ON operation_log(biz_type, biz_id);
+    CREATE INDEX IF NOT EXISTS idx_recurrence_chain_pile ON recurrence_chain(pile_no);
+    CREATE INDEX IF NOT EXISTS idx_recurrence_chain_warranty ON recurrence_chain(is_warranty);
+    CREATE INDEX IF NOT EXISTS idx_settlement_adjustment_original ON settlement_adjustment(original_settlement_id);
+    CREATE INDEX IF NOT EXISTS idx_settlement_adjustment_chain ON settlement_adjustment(recurrence_chain_id);
+    CREATE INDEX IF NOT EXISTS idx_adjustment_item_adjustment ON adjustment_item(adjustment_id);
   `;
 
   db.exec(initSql);
@@ -116,20 +186,20 @@ function initDatabase() {
   const ruleCount = db.prepare('SELECT COUNT(*) as cnt FROM deduction_rule').get().cnt;
   if (ruleCount === 0) {
     const insertRule = db.prepare(`
-      INSERT INTO deduction_rule (id, fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO deduction_rule (id, fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, warranty_months, warranty_discount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const rules = [
-      { id: 'rule001', fault_type: '硬件故障', rule_name: '硬件故障扣款标准', rate_per_hour: 50, min_amount: 100, max_amount: 2000, repeat_penalty: 1.5 },
-      { id: 'rule002', fault_type: '软件故障', rule_name: '软件故障扣款标准', rate_per_hour: 30, min_amount: 50, max_amount: 1000, repeat_penalty: 1.2 },
-      { id: 'rule003', fault_type: '网络故障', rule_name: '网络故障扣款标准', rate_per_hour: 40, min_amount: 80, max_amount: 1500, repeat_penalty: 1.3 },
-      { id: 'rule004', fault_type: '其他', rule_name: '其他故障扣款标准', rate_per_hour: 20, min_amount: 30, max_amount: 500, repeat_penalty: 1.0 },
+      { id: 'rule001', fault_type: '硬件故障', rule_name: '硬件故障扣款标准', rate_per_hour: 50, min_amount: 100, max_amount: 2000, repeat_penalty: 1.5, warranty_months: 6, warranty_discount: 0.5 },
+      { id: 'rule002', fault_type: '软件故障', rule_name: '软件故障扣款标准', rate_per_hour: 30, min_amount: 50, max_amount: 1000, repeat_penalty: 1.2, warranty_months: 3, warranty_discount: 0.3 },
+      { id: 'rule003', fault_type: '网络故障', rule_name: '网络故障扣款标准', rate_per_hour: 40, min_amount: 80, max_amount: 1500, repeat_penalty: 1.3, warranty_months: 3, warranty_discount: 0.4 },
+      { id: 'rule004', fault_type: '其他', rule_name: '其他故障扣款标准', rate_per_hour: 20, min_amount: 30, max_amount: 500, repeat_penalty: 1.0, warranty_months: 1, warranty_discount: 0.2 },
     ];
 
     const tx = db.transaction(() => {
       for (const rule of rules) {
-        insertRule.run(rule.id, rule.fault_type, rule.rule_name, rule.rate_per_hour, rule.min_amount, rule.max_amount, rule.repeat_penalty);
+        insertRule.run(rule.id, rule.fault_type, rule.rule_name, rule.rate_per_hour, rule.min_amount, rule.max_amount, rule.repeat_penalty, rule.warranty_months, rule.warranty_discount);
       }
     });
     tx();

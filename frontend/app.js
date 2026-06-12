@@ -9,7 +9,9 @@ const statusMap = {
   repaired: { label: '已修复', class: 'status-repaired' },
   settled: { label: '已结算', class: 'status-settled' },
   draft: { label: '草稿', class: 'status-draft' },
-  confirmed: { label: '已确认', class: 'status-confirmed' }
+  confirmed: { label: '已确认', class: 'status-confirmed' },
+  detected: { label: '已检测', class: 'status-repaired' },
+  adjusted: { label: '已调整', class: 'status-settled' }
 };
 
 const faultTypes = ['硬件故障', '软件故障', '网络故障', '其他'];
@@ -48,6 +50,9 @@ function switchPage(page) {
       break;
     case 'settlement':
       loadSettlements();
+      break;
+    case 'recurrence':
+      loadAdjustments();
       break;
     case 'rules':
       loadRules();
@@ -703,6 +708,8 @@ function renderRules(rules) {
       <td>¥${r.min_amount}</td>
       <td>${r.max_amount ? '¥' + r.max_amount : '无上限'}</td>
       <td>×${r.repeat_penalty}</td>
+      <td>${r.warranty_months || 0}</td>
+      <td>${r.warranty_discount ? (r.warranty_discount * 100) + '%' : '-'}</td>
       <td>${r.is_active ? '<span class="status-badge status-confirmed">启用</span>' : '<span class="status-badge status-draft">停用</span>'}</td>
       <td>
         <button class="btn btn-sm" onclick="toggleRule('${r.id}', ${r.is_active})">${r.is_active ? '停用' : '启用'}</button>
@@ -743,6 +750,16 @@ function openRuleModal() {
         <input type="number" id="rule-penalty" value="1.5" min="1" step="0.1">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>质保期(月)</label>
+        <input type="number" id="rule-warranty-months" value="6" min="0">
+      </div>
+      <div class="form-group">
+        <label>质保减免比例</label>
+        <input type="number" id="rule-warranty-discount" value="0.5" min="0" max="1" step="0.1">
+      </div>
+    </div>
   `;
 
   const footer = `
@@ -760,6 +777,8 @@ async function submitRule() {
   const min_amount = parseFloat(document.getElementById('rule-min').value);
   const max_amount = document.getElementById('rule-max').value ? parseFloat(document.getElementById('rule-max').value) : null;
   const repeat_penalty = parseFloat(document.getElementById('rule-penalty').value);
+  const warranty_months = parseInt(document.getElementById('rule-warranty-months').value) || 0;
+  const warranty_discount = parseFloat(document.getElementById('rule-warranty-discount').value) || 0;
 
   if (!rule_name || isNaN(rate_per_hour) || isNaN(min_amount)) {
     showToast('请填写必填项', 'warning');
@@ -768,7 +787,7 @@ async function submitRule() {
 
   const res = await api('/deduction-rules', {
     method: 'POST',
-    body: { fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, operator: currentUser }
+    body: { fault_type, rule_name, rate_per_hour, min_amount, max_amount, repeat_penalty, warranty_months, warranty_discount, operator: currentUser }
   });
 
   if (res.code === 0) {
@@ -803,6 +822,398 @@ function formatTime(str) {
     return str.substring(0, 19);
   }
   return str;
+}
+
+async function detectRecurrenceByPile() {
+  const pileNo = document.getElementById('rc-recurrence-pile').value.trim();
+  if (!pileNo) {
+    showToast('请输入桩号', 'warning');
+    return;
+  }
+
+  const woRes = await api(`/work-orders?pile_no=${encodeURIComponent(pileNo)}&page_size=100`);
+  if (woRes.code !== 0) {
+    showToast('查询工单失败', 'error');
+    return;
+  }
+
+  const repairedOrders = woRes.data.list.filter(wo => wo.status === 'repaired' || wo.status === 'settled');
+
+  if (repairedOrders.length === 0) {
+    document.getElementById('recurrence-detected-area').style.display = 'block';
+    document.getElementById('recurrence-alert-title').textContent = '未发现复发事件';
+    document.getElementById('recurrence-alert-content').innerHTML = `
+      <p style="color:#8c8c8c;">桩号 ${pileNo} 没有已修复的工单，无法进行复发检测。</p>
+    `;
+    return;
+  }
+
+  let allRecurrences = [];
+  const savedChains = [];
+
+  for (const wo of repairedOrders) {
+    const repair = wo.repair_id ? {
+      repair_time: wo.repair_time,
+      duty_owner: wo.duty_owner,
+      duty_type: wo.duty_type
+    } : null;
+
+    if (!repair) continue;
+
+    const confirmRes = await api('/recurrences/confirm-repair-and-detect', {
+      method: 'POST',
+      body: {
+        work_order_id: wo.id,
+        repair_time: repair.repair_time,
+        duty_owner: repair.duty_owner,
+        duty_type: repair.duty_type,
+        confirmor: currentUser
+      }
+    });
+
+    if (confirmRes.code === 0 && confirmRes.data.recurrence_detected) {
+      for (const chain of confirmRes.data.recurrence_chains) {
+        if (!savedChains.includes(chain.id)) {
+          allRecurrences.push({ ...chain, _chainId: chain.id });
+          savedChains.push(chain.id);
+        }
+      }
+    }
+  }
+
+  for (const wo of repairedOrders) {
+    const detectRes = await api('/recurrences/detect', {
+      method: 'POST',
+      body: { work_order_id: wo.id }
+    });
+    if (detectRes.code === 0 && detectRes.data.recurrence_count > 0) {
+      for (const r of detectRes.data.recurrences) {
+        const exists = allRecurrences.find(ar =>
+          ar.original_work_order_id === r.original_work_order_id &&
+          ar.recurrence_work_order_id === r.recurrence_work_order_id
+        );
+        if (!exists) {
+          allRecurrences.push({ ...r, _source_wo: wo.id });
+        }
+      }
+    }
+  }
+
+  const detectedArea = document.getElementById('recurrence-detected-area');
+  detectedArea.style.display = 'block';
+
+  if (allRecurrences.length === 0) {
+    document.getElementById('recurrence-alert-title').textContent = '未发现复发事件';
+    document.getElementById('recurrence-alert-content').innerHTML = `
+      <p style="color:#8c8c8c;">桩号 ${pileNo} 在质保期内未检测到相同故障复发。</p>
+    `;
+    return;
+  }
+
+  document.getElementById('recurrence-alert-title').textContent = `检测到 ${allRecurrences.length} 个复发事件`;
+  document.getElementById('recurrence-alert-content').innerHTML = allRecurrences.map(r => `
+    <div class="recurrence-item">
+      <div class="recurrence-item-header">
+        <span class="recurrence-tag ${r.is_warranty ? 'warranty-yes' : 'warranty-no'}">
+          ${r.is_warranty ? '质保期内' : '质保期外'}
+        </span>
+        <span>${r.pile_no} - ${r.fault_type}</span>
+        <span style="margin-left:auto;font-size:12px;color:#8c8c8c;">
+          ${r.same_duty ? '同责任方' : '不同责任方'} |
+          质保期${r.warranty_months}个月
+        </span>
+      </div>
+      <div class="recurrence-detail-row">
+        <span>原工单停机: ${r.original_downtime}h (${r.original_duty_owner})</span>
+        <span style="margin:0 8px;">→</span>
+        <span>复发工单停机: ${r.recurrence_downtime}h (${r.recurrence_duty_owner})</span>
+        <span style="margin-left:auto;font-weight:500;">累计: ${r.total_downtime}h</span>
+      </div>
+      <div style="margin-top:8px;">
+        ${r._chainId ? `
+          <button class="btn btn-sm btn-primary" onclick="generateAdjustment('${r._chainId}')">生成调整单</button>
+        ` : `
+          <span style="color:#fa8c16;font-size:12px;">请先确认修复后再生成调整单</span>
+        `}
+        <button class="btn btn-sm" onclick="viewRecurrenceChain('${r.original_work_order_id}')">查看链路</button>
+      </div>
+    </div>
+  `).join('');
+
+  loadAdjustments();
+}
+
+async function generateAdjustment(chainId) {
+  if (!chainId) {
+    showToast('复发链路ID缺失，请重新检测', 'warning');
+    return;
+  }
+
+  const res = await api('/recurrences/generate-adjustment', {
+    method: 'POST',
+    body: { recurrence_chain_id: chainId, operator: currentUser }
+  });
+
+  if (res.code === 0) {
+    showToast('调整单生成成功', 'success');
+    loadAdjustments();
+  } else {
+    showToast(res.message, 'error');
+  }
+}
+
+async function viewRecurrenceChain(workOrderId) {
+  const res = await api(`/recurrences/chain/${workOrderId}`);
+  if (res.code !== 0) {
+    showToast(res.message, 'error');
+    return;
+  }
+
+  const data = res.data;
+  const body = `
+    <div class="detail-section">
+      <h4>复发链路 - ${data.pile_no} / ${data.fault_type}</h4>
+      <div class="chain-timeline">
+        ${data.chain.map((item, idx) => `
+          <div class="chain-node ${idx < data.chain.length - 1 ? '' : 'chain-node-last'}">
+            <div class="chain-node-dot ${item.status === 'settled' ? 'dot-settled' : 'dot-repaired'}"></div>
+            <div class="chain-node-content">
+              <div class="chain-node-title">
+                工单 #${item.work_order_id.substring(0, 12)}...
+                ${idx > 0 ? '<span class="repeat-tag">复发</span>' : '<span style="color:#52c41a;font-size:11px;">原始</span>'}
+              </div>
+              <div class="chain-node-info">
+                <span>停机: ${item.downtime?.toFixed(2) || 0}h</span>
+                <span>责任方: ${item.duty_owner || '-'}</span>
+                <span>扣款: ¥${item.deduction_amount?.toFixed(2) || 0}</span>
+                <span>状态: ${statusMap[item.status]?.label || item.status}</span>
+              </div>
+              <div style="font-size:11px;color:#8c8c8c;">
+                ${formatTime(item.downtime_start)} ~ ${formatTime(item.repair_time)}
+              </div>
+            </div>
+          </div>
+        `).join('') || '<div class="empty-state">无复发链路</div>'}
+      </div>
+    </div>
+    ${data.chain_records.length > 0 ? `
+    <div class="detail-section">
+      <h4>链路关联记录</h4>
+      <table class="settle-items-table">
+        <thead>
+          <tr>
+            <th>质保期内</th>
+            <th>同责任方</th>
+            <th>原停机(h)</th>
+            <th>复发停机(h)</th>
+            <th>累计(h)</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.chain_records.map(cr => `
+            <tr>
+              <td>${cr.is_warranty ? '<span style="color:#ff4d4f;">是</span>' : '否'}</td>
+              <td>${cr.same_duty ? '是' : '<span style="color:#fa8c16;">否</span>'}</td>
+              <td>${cr.original_downtime}</td>
+              <td>${cr.recurrence_downtime}</td>
+              <td>${cr.total_downtime}</td>
+              <td><span class="status-badge ${statusMap[cr.status]?.class || ''}">${statusMap[cr.status]?.label || cr.status}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
+  `;
+
+  openModal('复发链路详情', body);
+}
+
+async function loadAdjustments() {
+  const statusFilter = document.getElementById('adj-status-filter')?.value || '';
+
+  let url = '/recurrences/adjustments?page_size=50';
+  if (statusFilter) url += `&status=${statusFilter}`;
+
+  const res = await api(url);
+  if (res.code === 0) {
+    renderAdjustments(res.data.list);
+  }
+}
+
+function renderAdjustments(adjustments) {
+  const tbody = document.getElementById('adjustment-tbody');
+  if (!adjustments || adjustments.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">暂无调整单</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = adjustments.map(adj => {
+    const status = statusMap[adj.status] || { label: adj.status, class: '' };
+    return `
+      <tr>
+        <td><strong>${adj.id.substring(0, 12)}...</strong></td>
+        <td>${adj.original_settlement_id?.substring(0, 12) || '-'}...</td>
+        <td>${adj.adjustment_type === 'warranty_recurrence' ? '质保复发调整' : adj.adjustment_type}</td>
+        <td>¥${adj.original_total_deduction?.toFixed(2) || 0}</td>
+        <td style="color:${adj.adjustment_amount >= 0 ? '#ff4d4f' : '#52c41a'};font-weight:500;">
+          ${adj.adjustment_amount >= 0 ? '+' : ''}¥${adj.adjustment_amount?.toFixed(2) || 0}
+        </td>
+        <td style="font-weight:500;">¥${adj.new_total_deduction?.toFixed(2) || 0}</td>
+        <td><span class="status-badge ${status.class}">${status.label}</span></td>
+        <td>${formatTime(adj.created_at)}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn btn-sm" onclick="viewAdjustment('${adj.id}')">查看</button>
+            ${adj.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="confirmAdjustment('${adj.id}')">确认</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function viewAdjustment(id) {
+  const res = await api(`/recurrences/adjustments/${id}`);
+  if (res.code !== 0) {
+    showToast(res.message, 'error');
+    return;
+  }
+
+  const adj = res.data;
+  const status = statusMap[adj.status] || { label: adj.status, class: '' };
+
+  const body = `
+    <div class="settle-summary">
+      <div class="summary-item">
+        <div class="summary-value" style="color:#8c8c8c;">¥${adj.original_total_deduction?.toFixed(2) || 0}</div>
+        <div class="summary-label">原结算金额</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value" style="color:${adj.adjustment_amount >= 0 ? '#ff4d4f' : '#52c41a'};">
+          ${adj.adjustment_amount >= 0 ? '+' : ''}¥${adj.adjustment_amount?.toFixed(2) || 0}
+        </div>
+        <div class="summary-label">调整金额</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value">¥${adj.new_total_deduction?.toFixed(2) || 0}</div>
+        <div class="summary-label">调整后金额</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h4>调整信息</h4>
+      <div class="detail-row"><span class="detail-label">调整单号：</span><span class="detail-value">${adj.id}</span></div>
+      <div class="detail-row"><span class="detail-label">原结算单：</span><span class="detail-value">${adj.original_settlement_id}</span></div>
+      <div class="detail-row"><span class="detail-label">调整类型：</span><span class="detail-value">${adj.adjustment_type === 'warranty_recurrence' ? '质保复发调整' : adj.adjustment_type}</span></div>
+      <div class="detail-row"><span class="detail-label">状态：</span><span class="detail-value"><span class="status-badge ${status.class}">${status.label}</span></span></div>
+      <div class="detail-row"><span class="detail-label">操作人：</span><span class="detail-value">${adj.operator || '-'}</span></div>
+      ${adj.confirmed_at ? `<div class="detail-row"><span class="detail-label">确认时间：</span><span class="detail-value">${formatTime(adj.confirmed_at)}</span></div>` : ''}
+    </div>
+
+    <div class="detail-section">
+      <h4>调整明细 (${adj.items?.length || 0})</h4>
+      <div style="max-height:300px;overflow-y:auto;">
+        <table class="settle-items-table">
+          <thead>
+            <tr>
+              <th>故障类型</th>
+              <th>原停机(h)</th>
+              <th>复发停机(h)</th>
+              <th>累计(h)</th>
+              <th>责任方</th>
+              <th>同责任方</th>
+              <th>原扣款</th>
+              <th>新扣款</th>
+              <th>调整额</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(adj.items || []).map(item => `
+              <tr>
+                <td>${item.fault_type}</td>
+                <td>${item.original_downtime?.toFixed(2) || 0}</td>
+                <td style="color:#ff4d4f;">${item.recurrence_downtime?.toFixed(2) || 0}</td>
+                <td style="font-weight:500;">${item.total_downtime?.toFixed(2) || 0}</td>
+                <td>${item.duty_owner || '-'} / ${item.duty_type || '-'}</td>
+                <td>${item.same_duty ? '<span style="color:#52c41a;">是</span>' : '<span style="color:#fa8c16;">否</span>'}</td>
+                <td>¥${item.original_deduction_amount?.toFixed(2) || 0}</td>
+                <td style="font-weight:500;">¥${item.new_deduction_amount?.toFixed(2) || 0}</td>
+                <td style="color:${item.adjustment_amount >= 0 ? '#ff4d4f' : '#52c41a'};">
+                  ${item.adjustment_amount >= 0 ? '+' : ''}¥${item.adjustment_amount?.toFixed(2) || 0}
+                </td>
+              </tr>
+              ${item.remark ? `<tr><td colspan="9" style="font-size:12px;color:#8c8c8c;background:#fafafa;padding:4px 12px;">${item.remark}${item.warranty_discount > 0 ? ' | 质保减免率:' + (item.warranty_discount * 100) + '%' : ''}</td></tr>` : ''}
+            `).join('') || '<tr><td colspan="9" class="empty-state">暂无明细</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    ${adj.chain && adj.chain.length > 0 ? `
+    <div class="detail-section">
+      <h4>复发链路</h4>
+      <div class="chain-timeline">
+        ${adj.chain.map((item, idx) => `
+          <div class="chain-node ${idx < adj.chain.length - 1 ? '' : 'chain-node-last'}">
+            <div class="chain-node-dot ${item.status === 'settled' ? 'dot-settled' : 'dot-repaired'}"></div>
+            <div class="chain-node-content">
+              <div class="chain-node-title">
+                工单 #${item.work_order_id.substring(0, 12)}...
+                ${idx > 0 ? '<span class="repeat-tag">复发</span>' : '<span style="color:#52c41a;font-size:11px;">原始</span>'}
+              </div>
+              <div class="chain-node-info">
+                <span>停机: ${item.downtime?.toFixed(2) || 0}h</span>
+                <span>责任方: ${item.duty_owner || '-'}</span>
+                <span>扣款: ¥${item.deduction_amount?.toFixed(2) || 0}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="detail-section">
+      <h4>操作日志</h4>
+      <div class="log-list">
+        ${(adj.logs || []).map(log => `
+          <div class="log-item">
+            <span class="log-time">${formatTime(log.created_at)}</span>
+            <span class="log-action">${log.action}</span>
+            <span class="log-detail">${log.operator} - ${log.detail || ''}</span>
+          </div>
+        `).join('') || '<div class="empty-state">暂无日志</div>'}
+      </div>
+    </div>
+  `;
+
+  const footer = adj.status === 'draft' ? `
+    <button class="btn" onclick="closeModal()">关闭</button>
+    <button class="btn btn-primary" onclick="confirmAdjustment('${adj.id}')">确认调整单</button>
+  ` : `
+    <button class="btn btn-primary" onclick="closeModal()">关闭</button>
+  `;
+
+  openModal('调整单详情', body, footer);
+}
+
+async function confirmAdjustment(id) {
+  if (!confirm('确定要确认该调整单吗？确认后原结算金额不变，调整单生效。')) return;
+
+  const res = await api(`/recurrences/adjustments/${id}/confirm`, {
+    method: 'POST',
+    body: { confirmor: currentUser }
+  });
+
+  if (res.code === 0) {
+    showToast('调整单确认成功', 'success');
+    closeModal();
+    loadAdjustments();
+  } else {
+    showToast(res.message, 'error');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

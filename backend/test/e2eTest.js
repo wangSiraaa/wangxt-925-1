@@ -430,6 +430,218 @@ async function runEndToEndTests() {
   });
 
   // ============================================================
+  console.log('\n【场景五】质保复发追责与扣款重算\n');
+  // ============================================================
+
+  let recurrenceWO_A, recurrenceWO_B, recurrenceChainId, adjustmentId;
+
+  await test('5.1 创建原工单（已修复、已结算）- 设备厂商/主要责任', async () => {
+    const res = await api('POST', '/work-orders', {
+      pile_no: 'SCENE-005',
+      fault_type: '硬件故障',
+      fault_desc: '质保复发原工单',
+      downtime_start: '2024-07-01 08:00:00',
+      reporter: '验证员'
+    });
+    assert(res.body.code === 0, '创建工单失败');
+    recurrenceWO_A = res.body.data.id;
+
+    const confirmRes = await api('POST', `/work-orders/${recurrenceWO_A}/confirm-repair`, {
+      repair_time: '2024-07-01 11:00:00',
+      duty_owner: '设备厂商',
+      duty_type: '主要责任',
+      confirmor: '站长'
+    });
+    assert(confirmRes.body.code === 0, '确认修复失败');
+  });
+
+  await test('5.2 生成并确认SCENE-005结算单', async () => {
+    const genRes = await api('POST', '/settlements/generate', {
+      settlement_period: '2024-07',
+      pile_no: 'SCENE-005',
+      operator: '测试员'
+    });
+    assert(genRes.body.code === 0, '生成结算失败: ' + JSON.stringify(genRes.body));
+
+    const settleId = genRes.body.data[0]?.id || genRes.body.data?.id;
+    assert(settleId, '应返回结算单ID');
+
+    const confirmRes = await api('POST', `/settlements/${settleId}/confirm`, {
+      confirmor: '财务主管'
+    });
+    assert(confirmRes.body.code === 0, '确认结算失败');
+  });
+
+  await test('5.3 在质保期内创建复发工单 - 运维方/次要责任', async () => {
+    const res = await api('POST', '/work-orders', {
+      pile_no: 'SCENE-005',
+      fault_type: '硬件故障',
+      fault_desc: '质保期内复发故障',
+      downtime_start: '2024-09-15 10:00:00',
+      reporter: '验证员'
+    });
+    assert(res.body.code === 0, '创建复发工单失败');
+    recurrenceWO_B = res.body.data.id;
+
+    const confirmRes = await api('POST', `/work-orders/${recurrenceWO_B}/confirm-repair`, {
+      repair_time: '2024-09-15 14:00:00',
+      duty_owner: '运维方',
+      duty_type: '次要责任',
+      confirmor: '站长'
+    });
+    assert(confirmRes.body.code === 0, '确认修复失败');
+  });
+
+  await test('5.4 检测复发 - 应检测到质保期内复发', async () => {
+    const res = await api('POST', '/recurrences/detect', {
+      work_order_id: recurrenceWO_B
+    });
+    assert(res.body.code === 0, '检测复发失败: ' + JSON.stringify(res.body));
+    assert(res.body.data.recurrence_count >= 1, `应检测到至少1个复发，实际 ${res.body.data.recurrence_count}`);
+
+    const rc = res.body.data.recurrences[0];
+    assert(rc.is_warranty === 1, '应在质保期内: ' + JSON.stringify(rc));
+    assert(rc.same_duty === 0, '责任方不同，same_duty应为0');
+    assert(rc.pile_no === 'SCENE-005', '桩号应为SCENE-005');
+    assert(rc.fault_type === '硬件故障', '故障类型应为硬件故障');
+    console.log(`     ℹ️ 检测到复发: 质保期内=${rc.is_warranty}, 同责任方=${rc.same_duty}, 质保期${rc.warranty_months}月`);
+  });
+
+  await test('5.5 使用confirm-repair-and-detect接口 - 自动保存复发链路', async () => {
+    const res = await api('POST', '/recurrences/confirm-repair-and-detect', {
+      work_order_id: recurrenceWO_B,
+      repair_time: '2024-09-15 14:00:00',
+      duty_owner: '运维方',
+      duty_type: '次要责任',
+      confirmor: '站长'
+    });
+    assert(res.body.code === 0, '确认修复并检测失败: ' + JSON.stringify(res.body));
+    assert(res.body.data.recurrence_detected === true, '应检测到复发');
+
+    if (res.body.data.recurrence_chains && res.body.data.recurrence_chains.length > 0) {
+      recurrenceChainId = res.body.data.recurrence_chains[0].id;
+      assert(recurrenceChainId, '应返回复发链路ID');
+      console.log(`     ℹ️ 复发链路ID: ${recurrenceChainId}`);
+    } else {
+      const chains = require('../db/jsonDB').tables.recurrence_chain.filter(
+        rc => rc.recurrence_work_order_id === recurrenceWO_B
+      );
+      assert(chains.length > 0, '数据库中应存在复发链路记录');
+      recurrenceChainId = chains[0].id;
+    }
+  });
+
+  await test('5.6 质保期复发生成调整单', async () => {
+    const res = await api('POST', '/recurrences/generate-adjustment', {
+      recurrence_chain_id: recurrenceChainId,
+      operator: '财务_王会计'
+    });
+    assert(res.body.code === 0, '生成调整单失败: ' + JSON.stringify(res.body));
+
+    adjustmentId = res.body.data.adjustment_id;
+    assert(adjustmentId, '应返回调整单ID');
+
+    const adjAmount = res.body.data.adjustment_amount;
+    assert(adjAmount !== 0, '调整金额不应为零');
+
+    console.log(`     ℹ️ 调整单ID: ${adjustmentId}`);
+    console.log(`     ℹ️ 原金额: ¥${res.body.data.original_amount}, 调整额: ¥${adjAmount}, 新金额: ¥${res.body.data.new_amount}`);
+    console.log(`     ℹ️ 同责任方: ${res.body.data.same_duty ? '是' : '否（不同责任方保留明细）'}`);
+  });
+
+  await test('5.7 调整单明细保留不同责任方', async () => {
+    const res = await api('GET', `/recurrences/adjustments/${adjustmentId}`);
+    assert(res.body.code === 0, '查询调整单失败');
+
+    const items = res.body.data.items;
+    assert(items.length >= 1, '调整单应有至少1条明细');
+
+    const item = items[0];
+    assert(item.same_duty === 0, '应标记为不同责任方');
+    assert(item.duty_owner === '运维方', '责任方应为运维方（复发工单的责任方）');
+    assert(item.duty_type === '次要责任', '责任类型应为次要责任');
+    assert(item.remark && item.remark.includes('不同责任方'), '备注应说明不同责任方保留明细');
+
+    console.log(`     ℹ️ 调整明细: ${item.duty_owner}/${item.duty_type}, 原扣款¥${item.original_deduction_amount}, 新扣款¥${item.new_deduction_amount}`);
+  });
+
+  await test('5.8 已确认结算单金额不可直接覆盖', async () => {
+    const adjDetail = await api('GET', `/recurrences/adjustments/${adjustmentId}`);
+    assert(adjDetail.body.code === 0, '查询调整单失败');
+
+    const originalSettlementId = adjDetail.body.data.original_settlement_id;
+    const originalSettlement = await api('GET', `/settlements/${originalSettlementId}`);
+    assert(originalSettlement.body.code === 0, '查询原结算单失败');
+
+    assert(originalSettlement.body.data.status === 'confirmed', '原结算单应仍为confirmed状态');
+    assert(originalSettlement.body.data.total_deduction === adjDetail.body.data.original_total_deduction,
+      '原结算单金额不应被修改');
+
+    console.log(`     ℹ️ 原结算单金额未变: ¥${originalSettlement.body.data.total_deduction}, 状态=${originalSettlement.body.data.status}`);
+  });
+
+  await test('5.9 确认调整单', async () => {
+    const res = await api('POST', `/recurrences/adjustments/${adjustmentId}/confirm`, {
+      confirmor: '财务主管'
+    });
+    assert(res.body.code === 0, '确认调整单失败: ' + JSON.stringify(res.body));
+
+    const afterConfirm = await api('GET', `/recurrences/adjustments/${adjustmentId}`);
+    assert(afterConfirm.body.data.status === 'confirmed', '确认后状态应为confirmed');
+
+    const originalSettlementId = afterConfirm.body.data.original_settlement_id;
+    const originalSettlement = await api('GET', `/settlements/${originalSettlementId}`);
+    assert(originalSettlement.body.data.total_deduction === afterConfirm.body.data.original_total_deduction,
+      '确认调整单后原结算金额仍不可变');
+  });
+
+  await test('5.10 复发链路可查询', async () => {
+    const res = await api('GET', `/recurrences/chain/${recurrenceWO_A}`);
+    assert(res.body.code === 0, '查询链路失败');
+    assert(res.body.data.chain.length >= 2, `链路应至少包含2个节点，实际 ${res.body.data.chain.length}`);
+
+    console.log(`     ℹ️ 链路节点数: ${res.body.data.chain.length}`);
+    res.body.data.chain.forEach((node, idx) => {
+      console.log(`        - 节点${idx + 1}: ${node.duty_owner}/${node.duty_type}, 停机${node.downtime}h, ¥${node.deduction_amount}`);
+    });
+  });
+
+  await test('5.11 未修复工单不能参与复发判定', async () => {
+    const res = await api('POST', '/work-orders', {
+      pile_no: 'SCENE-005',
+      fault_type: '硬件故障',
+      fault_desc: '未修复工单-不参与复发',
+      downtime_start: '2024-10-01 08:00:00',
+      reporter: '验证员'
+    });
+    const pendingWO = res.body.data.id;
+
+    const detectRes = await api('POST', '/recurrences/detect', {
+      work_order_id: pendingWO
+    });
+    assert(detectRes.body.code !== 0 || detectRes.body.data.recurrence_count === 0,
+      '未修复工单不应检测到复发');
+
+    console.log(`     ℹ️ 未修复工单(pending)正确被排除在复发判定之外`);
+  });
+
+  await test('5.12 已确认结算不能直接修改金额（尝试修改被拒绝）', async () => {
+    const { tables } = require('../db/jsonDB');
+    const settlements = tables.settlement.filter(s => s.pile_no === 'SCENE-005' && s.status === 'confirmed');
+    assert(settlements.length > 0, '应存在SCENE-005已确认结算单');
+
+    const confirmedSettlement = settlements[0];
+    const originalAmount = confirmedSettlement.total_deduction;
+
+    const updateRes = await api('DELETE', `/settlements/${confirmedSettlement.id}?operator=${encodeURIComponent('测试员')}`);
+    assert(updateRes.body.code !== 0, '已确认结算单不应能被删除');
+    assert(updateRes.body.message && updateRes.body.message.includes('已确认'), '应提示已确认不能删除');
+
+    const afterAttempt = await api('GET', `/settlements/${confirmedSettlement.id}`);
+    assert(afterAttempt.body.data.total_deduction === originalAmount, '结算金额不应被改变');
+  });
+
+  // ============================================================
   console.log('\n========================================');
   console.log('  验证结果');
   console.log('========================================');
@@ -443,16 +655,20 @@ async function runEndToEndTests() {
     if (server) server.close();
     process.exit(1);
   } else {
-    console.log('\n🎉 全部验证通过！四大核心场景均符合需求：');
+    console.log('\n🎉 全部验证通过！五大核心场景均符合需求：');
     console.log('   1. ✅ 未修复故障不能进入结算 - 生成结算时自动过滤');
     console.log('   2. ✅ 时间异常工单单独退回并展示原因，有效工单继续生成');
     console.log('   3. ✅ 同桩同周期重复故障合并展示、责任明细保留、加罚1.5倍');
     console.log('   4. ✅ 结算确认后锁定、只能追加说明');
+    console.log('   5. ✅ 质保复发追责与扣款重算：');
+    console.log('      - 质保期内复发生成调整单');
+    console.log('      - 不同责任方复发明细独立保留');
+    console.log('      - 已确认结算不可直接修改金额');
     console.log('\n📋 页面回归验证要点（人工对照）:');
-    console.log('   [工单页] - 异常退回工单状态仍为 pending/repaired，含操作日志');
-    console.log('   [修复确认] - 确认时拦截修复时间早于开始/时长为零');
-    console.log('   [结算页] - 生成后显示"部分退回"提示 + 异常明细弹窗');
-    console.log('   [结算详情] - 同桩重复故障均标记"重复"、扣款加罚、责任方分条');
+    console.log('   [质保复发页] - 检测复发、查看链路、生成/确认调整单');
+    console.log('   [工单页] - 未修复工单不参与复发判定');
+    console.log('   [结算页] - 已确认结算金额不变、调整单独立存在');
+    console.log('   [规则页] - 质保期月数和减免比例展示');
   }
 
   if (server) server.close();

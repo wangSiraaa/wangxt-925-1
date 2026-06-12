@@ -14,6 +14,7 @@
         <button class="nav-btn active" data-page="work-order">工单管理</button>
         <button class="nav-btn" data-page="repair-confirm">修复确认</button>
         <button class="nav-btn" data-page="settlement">结算管理</button>
+        <button class="nav-btn" data-page="recurrence">质保复发</button>
         <button class="nav-btn" data-page="rules">扣款规则</button>
       </nav>
       <div class="user-info">
@@ -136,6 +137,54 @@
         </div>
       </section>
 
+      <section id="page-recurrence" class="page">
+        <div class="page-header">
+          <h2>质保复发追责与扣款重算</h2>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="rc-recurrence-pile" placeholder="输入桩号检测复发...">
+          <button class="btn btn-primary" onclick="detectRecurrenceByPile()">检测复发</button>
+          <span class="tip" style="margin-left:12px;">💡 输入桩号，系统自动检测该桩是否存在质保期内复发故障</span>
+        </div>
+
+        <div id="recurrence-detected-area" style="display:none;">
+          <div class="recurrence-alert" id="recurrence-alert-box">
+            <h4 id="recurrence-alert-title">检测到复发事件</h4>
+            <div id="recurrence-alert-content"></div>
+          </div>
+        </div>
+
+        <h3 style="margin:16px 0 8px;font-size:16px;color:#333;">调整单列表</h3>
+        <div class="filter-bar">
+          <select id="adj-status-filter" onchange="loadAdjustments()">
+            <option value="">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="confirmed">已确认</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>调整单号</th>
+                <th>原结算单</th>
+                <th>调整类型</th>
+                <th>原金额(元)</th>
+                <th>调整金额(元)</th>
+                <th>新金额(元)</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="adjustment-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="page-rules" class="page">
         <div class="page-header">
           <h2>扣款规则配置</h2>
@@ -152,6 +201,8 @@
                 <th>最低扣款(元)</th>
                 <th>最高扣款(元)</th>
                 <th>重复故障加罚</th>
+                <th>质保期(月)</th>
+                <th>质保减免</th>
                 <th>状态</th>
                 <th>操作</th>
               </tr>
