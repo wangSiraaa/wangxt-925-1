@@ -42,17 +42,23 @@ app.use((err, req, res, next) => {
   res.status(500).json({ code: 500, message: err.message || '服务器内部错误' });
 });
 
-function startServer(port = PORT) {
-  return app.listen(port, '0.0.0.0', () => {
-    console.log('========================================');
-    console.log('  充电桩运维结算系统');
-    console.log('========================================');
-    console.log(`🚀 服务已启动`);
-    console.log(`📡 访问地址: http://localhost:${port}`);
-    console.log(`📚 API 前缀: /api`);
-    console.log(`🌐 前端页面: http://localhost:${port}`);
-    console.log('');
+function startServer(port = PORT, host = '0.0.0.0', onListenCallback) {
+  const server = app.listen(port, host, () => {
+    if (onListenCallback) {
+      onListenCallback();
+    } else {
+      const displayHost = host === '0.0.0.0' ? 'localhost' : host;
+      console.log('========================================');
+      console.log('  充电桩运维结算系统');
+      console.log('========================================');
+      console.log(`🚀 服务已启动`);
+      console.log(`📡 访问地址: http://${displayHost}:${server.address().port}`);
+      console.log(`📚 API 前缀: /api`);
+      console.log(`🌐 前端页面: http://${displayHost}:${server.address().port}`);
+      console.log('');
+    }
   });
+  return server;
 }
 
 if (require.main === module) {

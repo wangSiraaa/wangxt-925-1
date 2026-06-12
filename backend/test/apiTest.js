@@ -182,8 +182,8 @@ const server = app.listen(0, '127.0.0.1', async () => {
     });
 
     await test('3.2 重复故障合并展示、责任明细保留', async () => {
-      const genRes = await api('POST', '/settlements/generate', { settlement_period: '2024-06' });
-      assert(genRes.body.code === 0, '生成失败');
+      const genRes = await api('POST', '/settlements/generate', { settlement_period: '2024-06', pile_no: 'S3-PILE', operator: '测试员' });
+      assert(genRes.body.code === 0, '生成失败: ' + (genRes.body.message || JSON.stringify(genRes.body)));
 
       const s3Settle = genRes.body.data.find(s => s.pile_no === 'S3-PILE');
       assert(s3Settle, '应该有S3-PILE的结算单');

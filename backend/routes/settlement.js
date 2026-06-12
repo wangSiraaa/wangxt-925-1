@@ -90,14 +90,23 @@ router.post('/generate', (req, res) => {
     return res.json({ code: 1, message: '请指定结算周期' });
   }
 
-  const existing = tables.settlement.find(s => 
-    s.settlement_period === settlement_period && 
-    s.pile_no === (pile_no || '') && 
-    s.status === SETTLE_STATUS.DRAFT
-  );
+  let existing;
+  if (pile_no) {
+    existing = tables.settlement.find(s => 
+      s.settlement_period === settlement_period && 
+      s.pile_no === pile_no && 
+      s.status === SETTLE_STATUS.DRAFT
+    );
+  } else {
+    existing = tables.settlement.find(s => 
+      s.settlement_period === settlement_period && 
+      s.status === SETTLE_STATUS.DRAFT
+    );
+  }
 
   if (existing) {
-    return res.json({ code: 1, message: '该桩该周期已有草稿结算单，请先处理' });
+    const scope = pile_no ? `桩号${pile_no}在` : '';
+    return res.json({ code: 1, message: `${scope}${settlement_period}周期已有草稿结算单，请先处理` });
   }
 
   let orders = tables.work_order.filter(wo => {
@@ -143,12 +152,22 @@ router.post('/generate', (req, res) => {
   }
 
   if (timeErrors.length > 0) {
-    return res.json({ 
-      code: 2, 
-      message: `存在${timeErrors.length}条时间异常工单，已退回`,
+    for (const err of timeErrors) {
+      const wo = tables.work_order.get(err.work_order_id);
+      if (wo) {
+        addOperationLog('work_order', err.work_order_id, '时间异常退回', operator || '系统',
+          `结算生成时退回：${err.reason}（桩号${err.pile_no}，${err.fault_type}）`);
+      }
+    }
+  }
+
+  if (validOrders.length === 0) {
+    return res.json({
+      code: 2,
+      message: `所有工单均存在时间异常，已全部退回`,
       data: {
         time_errors: timeErrors,
-        valid_count: validOrders.length
+        settlements: []
       }
     });
   }
@@ -180,9 +199,9 @@ router.post('/generate', (req, res) => {
     for (const order of pileOrders) {
       const isRepeat = faultTypeCount[order.fault_type] > 1;
       const dedResult = calculateDeduction(order.fault_type, order.downtime_hours, isRepeat);
-      
+
       const itemId = generateId('si_');
-      
+
       tables.settlement_item.insert({
         id: itemId,
         settlement_id: settleId,
@@ -231,11 +250,22 @@ router.post('/generate', (req, res) => {
     });
   }
 
-  res.json({
-    code: 0,
-    message: `成功生成${results.length}份结算单`,
-    data: results
-  });
+  if (timeErrors.length > 0) {
+    res.json({
+      code: 2,
+      message: `已生成${results.length}份结算单，${timeErrors.length}条时间异常工单已退回`,
+      data: {
+        settlements: results,
+        time_errors: timeErrors
+      }
+    });
+  } else {
+    res.json({
+      code: 0,
+      message: `成功生成${results.length}份结算单`,
+      data: results
+    });
+  }
 });
 
 router.post('/:id/confirm', (req, res) => {

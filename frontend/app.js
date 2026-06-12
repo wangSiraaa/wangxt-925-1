@@ -479,20 +479,24 @@ async function generateSettlement() {
     showToast(res.message, 'success');
     loadSettlements();
   } else if (res.code === 2) {
-    showToast(res.message, 'warning');
-    if (res.data && res.data.time_errors) {
+    const hasSettlements = res.data && res.data.settlements && res.data.settlements.length > 0;
+    showToast(res.message, hasSettlements ? 'success' : 'warning');
+    loadSettlements();
+
+    if (res.data && res.data.time_errors && res.data.time_errors.length > 0) {
       setTimeout(() => {
-        showTimeErrors(res.data.time_errors);
-      }, 100);
+        showTimeErrors(res.data.time_errors, () => loadSettlements());
+      }, 150);
     }
   } else {
     showToast(res.message, 'error');
   }
 }
 
-function showTimeErrors(errors) {
+function showTimeErrors(errors, onClose) {
+  window._timeErrorCloseCallback = onClose || null;
   const body = `
-    <p style="margin-bottom:12px;color:#ff4d4f;">以下工单存在时间异常，已退回：</p>
+    <p style="margin-bottom:12px;color:#ff4d4f;">以下工单存在时间异常，已退回。同周期有效工单已正常生成结算单，请刷新列表查看：</p>
     <div class="table-container">
       <table class="settle-items-table">
         <thead>
@@ -514,7 +518,18 @@ function showTimeErrors(errors) {
       </table>
     </div>
   `;
-  openModal('时间异常提醒', body, `<button class="btn btn-primary" onclick="closeModal()">知道了</button>`);
+  const footer = `
+    <button class="btn btn-primary" onclick="handleTimeErrorClose()">知道了，刷新列表</button>
+  `;
+  openModal('时间异常提醒（部分退回）', body, footer);
+}
+
+function handleTimeErrorClose() {
+  if (typeof window._timeErrorCloseCallback === 'function') {
+    window._timeErrorCloseCallback();
+    window._timeErrorCloseCallback = null;
+  }
+  closeModal();
 }
 
 async function viewSettlement(id) {

@@ -1,199 +1,463 @@
 {
   "work_order": [
     {
-      "id": "test_wo_a7e387d39da7447d",
-      "pile_no": "PILE-001",
+      "id": "wo_a8110b84e82842ad",
+      "pile_no": "SCENE-001",
       "fault_type": "硬件故障",
-      "fault_desc": "测试故障描述",
-      "downtime_start": "2024-06-15 08:00:00",
+      "fault_desc": "场景一测试：未修复不能结算",
+      "downtime_start": "2024-06-01 10:00:00",
       "photo_url": "",
-      "reporter": "test_user",
+      "reporter": "验证员",
+      "status": "pending",
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "wo_0837db7261424aa2",
+      "pile_no": "SCENE-001",
+      "fault_type": "软件故障",
+      "fault_desc": "场景一测试：已修复可结算",
+      "downtime_start": "2024-06-02 08:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
       "status": "repaired",
       "remark": "",
-      "created_at": "2026-06-11T23:06:02.037Z",
-      "updated_at": "2026-06-11T23:06:02.037Z"
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "test_pending_fa078069fa874aed",
-      "pile_no": "PILE-002",
-      "fault_type": "软件故障",
-      "downtime_start": "2024-06-15 09:00:00",
-      "reporter": "test_user2",
+      "id": "wo_3fed1e6fe8aa41c6",
+      "pile_no": "SCENE-002",
+      "fault_type": "网络故障",
+      "fault_desc": "场景二：修复时间早于开始时间",
+      "downtime_start": "2024-06-05 14:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
       "status": "pending",
-      "created_at": "2026-06-11T23:06:02.038Z",
-      "updated_at": "2026-06-11T23:06:02.038Z"
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "wo_m1_1162d2e7b0f64b87",
-      "pile_no": "PILE-TEST-MERGE",
+      "id": "wo_aaf679a5dc4f491d",
+      "pile_no": "SCENE-002",
+      "fault_type": "其他故障",
+      "fault_desc": "场景二：时长为零",
+      "downtime_start": "2024-06-06 12:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
+      "status": "pending",
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "wo_52c233cf65dd4203",
+      "pile_no": "SCENE-002",
       "fault_type": "硬件故障",
-      "downtime_start": "2024-06-01 08:00:00",
-      "reporter": "test_reporter",
-      "status": "settled",
-      "created_at": "2026-06-11T23:06:02.039Z",
-      "updated_at": "2026-06-11T23:06:02.039Z",
-      "remark": "\n追加测试说明"
-    },
-    {
-      "id": "wo_m2_f631fd8a20f4463f",
-      "pile_no": "PILE-TEST-MERGE",
-      "fault_type": "硬件故障",
-      "downtime_start": "2024-06-10 14:00:00",
-      "reporter": "test_reporter",
-      "status": "settled",
-      "created_at": "2026-06-11T23:06:02.039Z",
-      "updated_at": "2026-06-11T23:06:02.039Z"
-    },
-    {
-      "id": "wo_m3_fd5f294c11054d31",
-      "pile_no": "PILE-TEST-MERGE",
-      "fault_type": "软件故障",
-      "downtime_start": "2024-06-15 09:00:00",
-      "reporter": "test_reporter",
-      "status": "settled",
-      "created_at": "2026-06-11T23:06:02.040Z",
-      "updated_at": "2026-06-11T23:06:02.040Z"
-    },
-    {
-      "id": "wo_unr1_7b28cc91afe44217",
-      "pile_no": "PILE-UNREPAIRED",
-      "fault_type": "硬件故障",
-      "downtime_start": "2024-06-20 10:00:00",
-      "reporter": "test_user",
+      "fault_desc": "场景二：有效可结算工单",
+      "downtime_start": "2024-06-07 09:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
       "status": "repaired",
-      "created_at": "2026-06-11T23:06:02.050Z",
-      "updated_at": "2026-06-11T23:06:02.050Z"
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "wo_unr2_613f256d73e049ad",
-      "pile_no": "PILE-UNREPAIRED",
+      "id": "wo_e2e_472cd38350d34d51",
+      "pile_no": "SCENE-002C",
       "fault_type": "软件故障",
-      "downtime_start": "2024-06-20 10:00:00",
-      "reporter": "test_user",
-      "status": "pending",
-      "created_at": "2026-06-11T23:06:02.052Z",
-      "updated_at": "2026-06-11T23:06:02.052Z"
+      "fault_desc": "模拟：绕过前端校验直接入库的时间异常工单",
+      "downtime_start": "2024-06-08 15:00:00",
+      "photo_url": "",
+      "reporter": "模拟系统",
+      "status": "repaired",
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "wo_e2e2_7f8a71dd0a384c75",
+      "pile_no": "SCENE-002C",
+      "fault_type": "网络故障",
+      "fault_desc": "模拟：正常可结算工单（和异常工单同周期同桩）",
+      "downtime_start": "2024-06-09 08:00:00",
+      "photo_url": "",
+      "reporter": "模拟系统",
+      "status": "repaired",
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "wo_07ee0737d5dd4ce5",
+      "pile_no": "SCENE-003",
+      "fault_type": "硬件故障",
+      "fault_desc": "重复故障测试-1",
+      "downtime_start": "2024-06-10 08:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
+      "status": "settled",
+      "remark": "追加的说明信息",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "wo_650a05e4d7ed4d3e",
+      "pile_no": "SCENE-003",
+      "fault_type": "硬件故障",
+      "fault_desc": "重复故障测试-2",
+      "downtime_start": "2024-06-11 08:00:00",
+      "photo_url": "",
+      "reporter": "验证员",
+      "status": "settled",
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
     }
   ],
   "repair_record": [
     {
-      "id": "test_rr_be1821e48b6c4494",
-      "work_order_id": "test_wo_a7e387d39da7447d",
-      "repair_time": "2024-06-15 10:30:00",
+      "id": "rr_f9e634307d664397",
+      "work_order_id": "wo_0837db7261424aa2",
+      "repair_time": "2024-06-02 10:30:00",
       "duty_owner": "运维方",
       "duty_type": "主要责任",
-      "confirmor": "manager",
+      "confirmor": "站长",
       "confirm_remark": "",
-      "created_at": "2026-06-11T23:06:02.038Z"
+      "created_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "rr_1c993300524a4d74",
-      "work_order_id": "wo_m1_1162d2e7b0f64b87",
-      "repair_time": "2024-06-01 10:00:00",
+      "id": "rr_6ddfeeecb94043e2",
+      "work_order_id": "wo_52c233cf65dd4203",
+      "repair_time": "2024-06-07 12:00:00",
+      "duty_owner": "设备厂商",
+      "duty_type": "主要责任",
+      "confirmor": "站长",
+      "confirm_remark": "",
+      "created_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "rr_e2e_41536f56b0ad4e6c",
+      "work_order_id": "wo_e2e_472cd38350d34d51",
+      "repair_time": "2024-06-08 10:00:00",
       "duty_owner": "运维方",
       "duty_type": "主要责任",
-      "confirmor": "test_confirmor",
-      "created_at": "2026-06-11T23:06:02.039Z"
+      "duty_remark": "",
+      "confirmor": "模拟站长",
+      "created_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "rr_201056cebbc943c9",
-      "work_order_id": "wo_m2_f631fd8a20f4463f",
-      "repair_time": "2024-06-10 16:00:00",
+      "id": "rr_e2e2_279063c0edb84208",
+      "work_order_id": "wo_e2e2_7f8a71dd0a384c75",
+      "repair_time": "2024-06-09 12:00:00",
       "duty_owner": "设备厂商",
       "duty_type": "次要责任",
-      "confirmor": "test_confirmor",
-      "created_at": "2026-06-11T23:06:02.040Z"
+      "duty_remark": "",
+      "confirmor": "模拟站长",
+      "created_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "rr_093c37b11d064c78",
-      "work_order_id": "wo_m3_fd5f294c11054d31",
-      "repair_time": "2024-06-15 11:00:00",
-      "duty_owner": "运维方",
+      "id": "rr_d9f605b48c7d46a9",
+      "work_order_id": "wo_07ee0737d5dd4ce5",
+      "repair_time": "2024-06-10 11:00:00",
+      "duty_owner": "设备厂商",
       "duty_type": "主要责任",
-      "confirmor": "test_confirmor",
-      "created_at": "2026-06-11T23:06:02.041Z"
+      "confirmor": "站长",
+      "confirm_remark": "",
+      "created_at": "2026-06-12 10:42:40"
     },
     {
-      "id": "rr_4bb9f665a61b4c1f",
-      "work_order_id": "wo_unr1_7b28cc91afe44217",
-      "repair_time": "2024-06-20 12:00:00",
+      "id": "rr_e0d26338ada34273",
+      "work_order_id": "wo_650a05e4d7ed4d3e",
+      "repair_time": "2024-06-11 11:00:00",
       "duty_owner": "运维方",
-      "duty_type": "主要责任",
-      "confirmor": "test_confirmor",
-      "created_at": "2026-06-11T23:06:02.051Z"
+      "duty_type": "次要责任",
+      "confirmor": "站长",
+      "confirm_remark": "",
+      "created_at": "2026-06-12 10:42:40"
     }
   ],
   "settlement": [
     {
-      "id": "st_merge_0bbd6d2a21d34f53",
+      "id": "st_022d57ad610c4c31",
       "settlement_period": "2024-06",
-      "pile_no": "PILE-TEST-MERGE",
+      "pile_no": "SCENE-001",
+      "total_downtime": 2.5,
+      "total_deduction": 75,
+      "status": "draft",
+      "confirmor": null,
+      "confirm_time": null,
+      "settle_remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "st_13e2245a06814718",
+      "settlement_period": "2024-06",
+      "pile_no": "SCENE-002C",
+      "total_downtime": 4,
+      "total_deduction": 160,
+      "status": "draft",
+      "confirmor": null,
+      "confirm_time": null,
+      "settle_remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "st_b418e18155384a20",
+      "settlement_period": "2024-06",
+      "pile_no": "SCENE-003",
       "total_downtime": 6,
-      "total_deduction": 360,
+      "total_deduction": 450,
       "status": "confirmed",
-      "created_at": "2026-06-11T23:06:02.042Z",
-      "updated_at": "2026-06-11T23:06:02.042Z"
+      "confirmor": "财务主管",
+      "confirm_time": "2026-06-12 10:42:40",
+      "settle_remark": "",
+      "created_at": "2026-06-12 10:42:40",
+      "updated_at": "2026-06-12 10:42:40"
     }
   ],
   "settlement_item": [
     {
-      "id": "si_109e01e9a2a547fd",
-      "settlement_id": "st_merge_0bbd6d2a21d34f53",
-      "work_order_id": "wo_m1_1162d2e7b0f64b87",
-      "fault_type": "硬件故障",
-      "downtime_start": "2024-06-01 08:00:00",
-      "repair_time": "2024-06-01 10:00:00",
-      "downtime": 2,
-      "duty_owner": "运维方",
-      "duty_type": "主要责任",
-      "deduction_amount": 150,
-      "deduction_rule": "硬件故障扣款标准",
-      "is_repeat": 1,
-      "remark": "",
-      "created_at": "2026-06-11T23:06:02.042Z"
-    },
-    {
-      "id": "si_adabe0e0f8d54f80",
-      "settlement_id": "st_merge_0bbd6d2a21d34f53",
-      "work_order_id": "wo_m2_f631fd8a20f4463f",
-      "fault_type": "硬件故障",
-      "downtime_start": "2024-06-10 14:00:00",
-      "repair_time": "2024-06-10 16:00:00",
-      "downtime": 2,
-      "duty_owner": "设备厂商",
-      "duty_type": "次要责任",
-      "deduction_amount": 150,
-      "deduction_rule": "硬件故障扣款标准",
-      "is_repeat": 1,
-      "remark": "",
-      "created_at": "2026-06-11T23:06:02.042Z"
-    },
-    {
-      "id": "si_26a062bf5660422f",
-      "settlement_id": "st_merge_0bbd6d2a21d34f53",
-      "work_order_id": "wo_m3_fd5f294c11054d31",
+      "id": "si_ffeb5d0ced484f82",
+      "settlement_id": "st_022d57ad610c4c31",
+      "work_order_id": "wo_0837db7261424aa2",
       "fault_type": "软件故障",
-      "downtime_start": "2024-06-15 09:00:00",
-      "repair_time": "2024-06-15 11:00:00",
-      "downtime": 2,
+      "downtime_start": "2024-06-02 08:00:00",
+      "repair_time": "2024-06-02 10:30:00",
+      "downtime": 2.5,
       "duty_owner": "运维方",
       "duty_type": "主要责任",
-      "deduction_amount": 60,
+      "deduction_amount": 75,
       "deduction_rule": "软件故障扣款标准",
       "is_repeat": 0,
       "remark": "",
-      "created_at": "2026-06-11T23:06:02.042Z"
+      "created_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "si_72d16bdad0a64b55",
+      "settlement_id": "st_13e2245a06814718",
+      "work_order_id": "wo_e2e2_7f8a71dd0a384c75",
+      "fault_type": "网络故障",
+      "downtime_start": "2024-06-09 08:00:00",
+      "repair_time": "2024-06-09 12:00:00",
+      "downtime": 4,
+      "duty_owner": "设备厂商",
+      "duty_type": "次要责任",
+      "deduction_amount": 160,
+      "deduction_rule": "网络故障扣款标准",
+      "is_repeat": 0,
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "si_4f50c2a994a5418e",
+      "settlement_id": "st_b418e18155384a20",
+      "work_order_id": "wo_07ee0737d5dd4ce5",
+      "fault_type": "硬件故障",
+      "downtime_start": "2024-06-10 08:00:00",
+      "repair_time": "2024-06-10 11:00:00",
+      "downtime": 3,
+      "duty_owner": "设备厂商",
+      "duty_type": "主要责任",
+      "deduction_amount": 225,
+      "deduction_rule": "硬件故障扣款标准",
+      "is_repeat": 1,
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40"
+    },
+    {
+      "id": "si_3bd6ffd475644d80",
+      "settlement_id": "st_b418e18155384a20",
+      "work_order_id": "wo_650a05e4d7ed4d3e",
+      "fault_type": "硬件故障",
+      "downtime_start": "2024-06-11 08:00:00",
+      "repair_time": "2024-06-11 11:00:00",
+      "downtime": 3,
+      "duty_owner": "运维方",
+      "duty_type": "次要责任",
+      "deduction_amount": 225,
+      "deduction_rule": "硬件故障扣款标准",
+      "is_repeat": 1,
+      "remark": "",
+      "created_at": "2026-06-12 10:42:40"
     }
   ],
   "operation_log": [
     {
-      "id": "log_c5cbbfb0782a4bc0",
-      "biz_type": "test",
-      "biz_id": "test_log_biz",
-      "action": "测试操作",
-      "operator": "tester",
-      "detail": "测试详情",
-      "created_at": "2026-06-11T23:06:02.053Z"
+      "id": "log_3c603638ea624d11",
+      "biz_type": "work_order",
+      "biz_id": "wo_a8110b84e82842ad",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-001 - 硬件故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_5247803b68b74661",
+      "biz_type": "work_order",
+      "biz_id": "wo_0837db7261424aa2",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-001 - 软件故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_40152715182d4530",
+      "biz_type": "work_order",
+      "biz_id": "wo_0837db7261424aa2",
+      "action": "确认修复",
+      "operator": "站长",
+      "detail": "确认修复：责任方=运维方，责任类型=主要责任，停机时长=2.50小时",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_585b7a8420034d3c",
+      "biz_type": "settlement",
+      "biz_id": "st_022d57ad610c4c31",
+      "action": "生成结算单",
+      "operator": "系统",
+      "detail": "生成2024-06周期结算单，共1条工单，总扣款75.00元",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_c9ac931b735049a8",
+      "biz_type": "work_order",
+      "biz_id": "wo_3fed1e6fe8aa41c6",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-002 - 网络故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_73a90e715c21439d",
+      "biz_type": "work_order",
+      "biz_id": "wo_aaf679a5dc4f491d",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-002 - 其他故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_af6772007cae426b",
+      "biz_type": "work_order",
+      "biz_id": "wo_52c233cf65dd4203",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-002 - 硬件故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_3bc3e09bf633413f",
+      "biz_type": "work_order",
+      "biz_id": "wo_52c233cf65dd4203",
+      "action": "确认修复",
+      "operator": "站长",
+      "detail": "确认修复：责任方=设备厂商，责任类型=主要责任，停机时长=3.00小时",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_e07ba8d267a047fa",
+      "biz_type": "work_order",
+      "biz_id": "wo_e2e_472cd38350d34d51",
+      "action": "时间异常退回",
+      "operator": "测试员",
+      "detail": "结算生成时退回：修复时间早于停机开始时间（桩号SCENE-002C，软件故障）",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_4eb1173d64804741",
+      "biz_type": "settlement",
+      "biz_id": "st_13e2245a06814718",
+      "action": "生成结算单",
+      "operator": "测试员",
+      "detail": "生成2024-06周期结算单，共1条工单，总扣款160.00元",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_49c9f52afc474b0a",
+      "biz_type": "work_order",
+      "biz_id": "wo_07ee0737d5dd4ce5",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-003 - 硬件故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_0d5244535c6c418d",
+      "biz_type": "work_order",
+      "biz_id": "wo_07ee0737d5dd4ce5",
+      "action": "确认修复",
+      "operator": "站长",
+      "detail": "确认修复：责任方=设备厂商，责任类型=主要责任，停机时长=3.00小时",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_87f0ad6fcae8463e",
+      "biz_type": "work_order",
+      "biz_id": "wo_650a05e4d7ed4d3e",
+      "action": "创建工单",
+      "operator": "验证员",
+      "detail": "创建故障工单：SCENE-003 - 硬件故障",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_99343563c50c461e",
+      "biz_type": "work_order",
+      "biz_id": "wo_650a05e4d7ed4d3e",
+      "action": "确认修复",
+      "operator": "站长",
+      "detail": "确认修复：责任方=运维方，责任类型=次要责任，停机时长=3.00小时",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_67c03882f4ea4971",
+      "biz_type": "settlement",
+      "biz_id": "st_b418e18155384a20",
+      "action": "生成结算单",
+      "operator": "测试员",
+      "detail": "生成2024-06周期结算单，共2条工单，总扣款450.00元",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_f86d6732edfa4277",
+      "biz_type": "work_order",
+      "biz_id": "wo_07ee0737d5dd4ce5",
+      "action": "结算确认",
+      "operator": "财务主管",
+      "detail": "工单进入结算状态，结算单：st_b418e18155384a20",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_2580f7aae5ed4594",
+      "biz_type": "work_order",
+      "biz_id": "wo_650a05e4d7ed4d3e",
+      "action": "结算确认",
+      "operator": "财务主管",
+      "detail": "工单进入结算状态，结算单：st_b418e18155384a20",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_0a9eb3f2d71f455a",
+      "biz_type": "settlement",
+      "biz_id": "st_b418e18155384a20",
+      "action": "确认结算",
+      "operator": "财务主管",
+      "detail": "确认结算，共2条工单，总扣款450.00元",
+      "created_at": "2026-6-12 10:42:40"
+    },
+    {
+      "id": "log_07279c96fe3f4a68",
+      "biz_type": "work_order",
+      "biz_id": "wo_07ee0737d5dd4ce5",
+      "action": "追加说明",
+      "operator": "系统",
+      "detail": "追加说明：追加的说明信息",
+      "created_at": "2026-6-12 10:42:40"
     }
   ],
   "deduction_rule": [
@@ -206,7 +470,7 @@
       "max_amount": 2000,
       "repeat_penalty": 1.5,
       "is_active": 1,
-      "created_at": "2026-06-11T23:06:02.032Z"
+      "created_at": "2026-06-12T02:42:40.718Z"
     },
     {
       "id": "rule002",
@@ -217,7 +481,7 @@
       "max_amount": 1000,
       "repeat_penalty": 1.2,
       "is_active": 1,
-      "created_at": "2026-06-11T23:06:02.033Z"
+      "created_at": "2026-06-12T02:42:40.719Z"
     },
     {
       "id": "rule003",
@@ -228,7 +492,7 @@
       "max_amount": 1500,
       "repeat_penalty": 1.3,
       "is_active": 1,
-      "created_at": "2026-06-11T23:06:02.033Z"
+      "created_at": "2026-06-12T02:42:40.719Z"
     },
     {
       "id": "rule004",
@@ -239,7 +503,7 @@
       "max_amount": 500,
       "repeat_penalty": 1,
       "is_active": 1,
-      "created_at": "2026-06-11T23:06:02.033Z"
+      "created_at": "2026-06-12T02:42:40.719Z"
     }
   ]
 }
